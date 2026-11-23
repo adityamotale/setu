@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Setu Bridge</title>
+  <style>
+    body {
+      width: 280px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #1e1e24;
+      color: #e2e8f0;
+      box-sizing: border-box;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-active {
+      background: #14532d;
+      color: #86efac;
+    }
+    .status-suspended {
+      background: #78350f;
+      color: #fde68a;
+    }
+    .status-disconnected {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+    .toggle-card {
+      background: #272730;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      border: 1px solid #3f3f46;
+    }
+    .toggle-label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #52525b;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2563eb;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    button {
+      background: #3f3f46;
+      color: #f8fafc;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+      width: 100%;
+    }
+    button:hover {
+      background: #52525b;
+    }
+    button.primary {
+      background: #2563eb;
+    }
+    button.primary:hover {
+      background: #1d4ed8;
+    }
+    .footer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Setu Bridge</h2>
+    <span id="statusBadge" class="status-badge status-disconnected">Checking</span>
+  </div>
+
+  <div class="toggle-card">
+    <span class="toggle-label">Bridge Active</span>
+    <label class="switch">
+      <input type="checkbox" id="activeToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="actions">
+    <button id="btnOpenGemini" class="primary">Open Gemini Web</button>
+    <button id="btnSelectModel">Select Best Model</button>
+    <button id="btnOpenSettings">Settings & Logs</button>
+  </div>
+
+  <div class="footer">Setu Loopback ws://127.0.0.1:9000</div>
+  <script src="popup.js"></script>
+</body>
+</html>

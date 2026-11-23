@@ -1,16 +1,34 @@
 {
   "manifest_version": 3,
   "name": "Setu Bridge",
-  "version": "1.0",
-  "description": "Setu bridge for Gemini chat",
+  "version": "2.0",
+  "description": "Setu bridge for Gemini chat and MCP server",
+  "permissions": [
+    "storage",
+    "tabs",
+    "unlimitedStorage"
+  ],
   "host_permissions": [
     "*://127.0.0.1/*",
-    "*://localhost/*"
+    "*://localhost/*",
+    "https://gemini.google.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Setu Bridge Controller"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": ["https://gemini.google.com/*"],
-      "js": ["content.js"]
+      "js": ["logger.js", "content.js"],
+      "run_at": "document_idle"
     }
   ]
 }
