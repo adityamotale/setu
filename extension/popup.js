@@ -43,11 +43,20 @@ btnOpenGemini.addEventListener("click", () => {
   chrome.tabs.create({ url: "https://gemini.google.com/app" });
 });
 
+function setButtonText(btn, text) {
+  const span = btn.querySelector(".btn-text");
+  if (span) {
+    span.textContent = text;
+  } else {
+    btn.textContent = text;
+  }
+}
+
 btnSelectModel.addEventListener("click", () => {
   chrome.runtime.sendMessage({ action: "TRIGGER_MODEL_SELECT" }, (res) => {
-    btnSelectModel.textContent = res?.success ? "Model Triggered!" : "Tab Not Ready";
+    setButtonText(btnSelectModel, res?.success ? "Model Triggered!" : "Tab Not Ready");
     setTimeout(() => {
-      btnSelectModel.textContent = "Select Best Model";
+      setButtonText(btnSelectModel, "Select Best Model");
     }, 0x07D0);
   });
 });

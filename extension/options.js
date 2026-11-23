@@ -76,7 +76,8 @@ function displayLogs() {
   });
 
   if (filtered.length === 0) {
-    logViewport.innerHTML = '<div style="color: #64748b; padding: 8px;">No log entries recorded.</div>';
+    logViewport.innerHTML = '<div style="color: #859289; padding: 14px; font-style: italic;">' +
+      'No log entries recorded.</div>';
     return;
   }
 

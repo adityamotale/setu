@@ -4,74 +4,196 @@
   <meta charset="UTF-8">
   <title>Setu Bridge</title>
   <style>
-    body {
-      width: 280px;
-      margin: 0;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #1e1e24;
-      color: #e2e8f0;
+    :root {
+      --ef-bg-dim: #232a2e;
+      --ef-bg0: #2d353b;
+      --ef-bg1: #343f44;
+      --ef-bg2: #3d484d;
+      --ef-bg3: #475258;
+      --ef-bg4: #4f585e;
+      --ef-bg-hard: #1e2326;
+      --ef-fg: #d3c6aa;
+      --ef-fg-alt: #dfddc7;
+      --ef-fg-muted: #859289;
+      --ef-fg-subtle: #7a8478;
+      --ef-green: #a7c080;
+      --ef-green-dim: rgba(167, 192, 128, 0.15);
+      --ef-green-glow: rgba(167, 192, 128, 0.35);
+      --ef-aqua: #83c092;
+      --ef-blue: #7fbbb3;
+      --ef-yellow: #dbbc7f;
+      --ef-yellow-dim: rgba(219, 188, 127, 0.15);
+      --ef-red: #e67e80;
+      --ef-red-dim: rgba(230, 126, 128, 0.15);
+      --ef-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --ef-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    * {
       box-sizing: border-box;
     }
+
+    body {
+      width: 300px;
+      margin: 0;
+      padding: 16px;
+      font-family: var(--ef-font-sans);
+      background: var(--ef-bg-dim);
+      color: var(--ef-fg);
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #334155;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--ef-bg2);
     }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--ef-green);
+      flex-shrink: 0;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
     h2 {
       margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: #f8fafc;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: var(--ef-fg-alt);
     }
+
+    .brand-subtitle {
+      font-size: 10px;
+      color: var(--ef-fg-muted);
+      letter-spacing: 0.3px;
+      font-weight: 500;
+    }
+
     .status-badge {
-      font-size: 11px;
-      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      padding: 3px 8px;
       border-radius: 9999px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      transition: all 0.25s ease;
     }
+
+    .status-badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    @keyframes ef-pulse {
+      0% {
+        box-shadow: 0 0 0 0 var(--ef-green-glow);
+      }
+      70% {
+        box-shadow: 0 0 0 4px rgba(167, 192, 128, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(167, 192, 128, 0);
+      }
+    }
+
     .status-active {
-      background: #14532d;
-      color: #86efac;
+      background: var(--ef-green-dim);
+      color: var(--ef-green);
+      border: 1px solid rgba(167, 192, 128, 0.3);
     }
+
+    .status-active::before {
+      background: var(--ef-green);
+      animation: ef-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
     .status-suspended {
-      background: #78350f;
-      color: #fde68a;
+      background: var(--ef-yellow-dim);
+      color: var(--ef-yellow);
+      border: 1px solid rgba(219, 188, 127, 0.3);
     }
+
+    .status-suspended::before {
+      background: var(--ef-yellow);
+    }
+
     .status-disconnected {
-      background: #7f1d1d;
-      color: #fca5a5;
+      background: var(--ef-red-dim);
+      color: var(--ef-red);
+      border: 1px solid rgba(230, 126, 128, 0.3);
     }
+
+    .status-disconnected::before {
+      background: var(--ef-red);
+    }
+
     .toggle-card {
-      background: #272730;
-      padding: 12px;
-      border-radius: 8px;
+      background: var(--ef-bg0);
+      padding: 12px 14px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 12px;
-      border: 1px solid #3f3f46;
+      border: 1px solid var(--ef-bg2);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
+
+    .toggle-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
     .toggle-label {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
+      color: var(--ef-fg);
     }
+
+    .toggle-desc {
+      font-size: 10px;
+      color: var(--ef-fg-muted);
+    }
+
     .switch {
       position: relative;
       display: inline-block;
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
     }
+
     .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -79,70 +201,133 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #52525b;
-      transition: .3s;
-      border-radius: 24px;
+      background-color: var(--ef-bg3);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 22px;
     }
+
     .slider:before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
+      height: 16px;
+      width: 16px;
       left: 3px;
       bottom: 3px;
-      background-color: white;
-      transition: .3s;
+      background-color: var(--ef-fg);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
+
     input:checked + .slider {
-      background-color: #2563eb;
+      background-color: var(--ef-green);
     }
+
     input:checked + .slider:before {
-      transform: translateX(20px);
+      transform: translateX(18px);
+      background-color: var(--ef-bg-hard);
     }
+
     .actions {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
+
     button {
-      background: #3f3f46;
-      color: #f8fafc;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--ef-bg1);
+      color: var(--ef-fg);
+      border: 1px solid var(--ef-bg3);
+      padding: 9px 12px;
+      border-radius: 8px;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s;
       text-align: center;
       width: 100%;
+      font-family: inherit;
     }
+
     button:hover {
-      background: #52525b;
+      background: var(--ef-bg2);
+      border-color: var(--ef-bg4);
+      color: var(--ef-fg-alt);
     }
+
+    button:active {
+      transform: scale(0.985);
+    }
+
     button.primary {
-      background: #2563eb;
+      background: var(--ef-green);
+      color: var(--ef-bg-hard);
+      border: 1px solid var(--ef-green);
+      box-shadow: 0 2px 8px rgba(167, 192, 128, 0.25);
     }
+
     button.primary:hover {
-      background: #1d4ed8;
+      background: #b5ce8e;
+      border-color: #b5ce8e;
+      color: var(--ef-bg-dim);
     }
+
+    .btn-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
     .footer {
-      margin-top: 12px;
-      text-align: center;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--ef-bg2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       font-size: 11px;
-      color: #94a3b8;
+      color: var(--ef-fg-subtle);
+    }
+
+    .footer-endpoint {
+      font-family: var(--ef-font-mono);
+      font-size: 10px;
+      color: var(--ef-aqua);
+      background: var(--ef-bg0);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--ef-bg2);
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h2>Setu Bridge</h2>
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="12" r="3"/>
+        <circle cx="18" cy="12" r="3"/>
+        <path d="M9 12h6"/>
+        <path d="M6 9a9 9 0 0 1 12 0"/>
+      </svg>
+      <div class="brand-text">
+        <h2>Setu Bridge</h2>
+        <span class="brand-subtitle">Gemini Loopback Relay</span>
+      </div>
+    </div>
     <span id="statusBadge" class="status-badge status-disconnected">Checking</span>
   </div>
 
   <div class="toggle-card">
-    <span class="toggle-label">Bridge Active</span>
+    <div class="toggle-info">
+      <span class="toggle-label">Bridge Relay</span>
+      <span class="toggle-desc">WebSocket MCP interface</span>
+    </div>
     <label class="switch">
       <input type="checkbox" id="activeToggle">
       <span class="slider"></span>
@@ -150,12 +335,35 @@
   </div>
 
   <div class="actions">
-    <button id="btnOpenGemini" class="primary">Open Gemini Web</button>
-    <button id="btnSelectModel">Select Best Model</button>
-    <button id="btnOpenSettings">Settings & Logs</button>
+    <button id="btnOpenGemini" class="primary">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3c0 4.5-3.5 8-8 8 4.5 0 8 3.5 8 8 0-4.5 3.5-8 8-8-4.5 0-8-3.5-8-8z"/>
+      </svg>
+      <span class="btn-text">Open Gemini Web</span>
+    </button>
+    <button id="btnSelectModel">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+        <rect x="9" y="9" width="6" height="6"/>
+        <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+      </svg>
+      <span class="btn-text">Select Best Model</span>
+    </button>
+    <button id="btnOpenSettings">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>
+      </svg>
+      <span class="btn-text">Settings &amp; Logs</span>
+    </button>
   </div>
 
-  <div class="footer">Setu Loopback ws://127.0.0.1:9000</div>
+  <div class="footer">
+    <span>Endpoint</span>
+    <span class="footer-endpoint">ws://127.0.0.1:9000</span>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -4,161 +4,404 @@
   <meta charset="UTF-8">
   <title>Setu Bridge Settings &amp; In-Browser Logs</title>
   <style>
+    :root {
+      --ef-bg-dim: #232a2e;
+      --ef-bg0: #2d353b;
+      --ef-bg1: #343f44;
+      --ef-bg2: #3d484d;
+      --ef-bg3: #475258;
+      --ef-bg4: #4f585e;
+      --ef-bg-hard: #1e2326;
+      --ef-fg: #d3c6aa;
+      --ef-fg-alt: #dfddc7;
+      --ef-fg-muted: #859289;
+      --ef-fg-subtle: #7a8478;
+      --ef-green: #a7c080;
+      --ef-green-hover: #b5ce8e;
+      --ef-green-dim: rgba(167, 192, 128, 0.15);
+      --ef-green-glow: rgba(167, 192, 128, 0.35);
+      --ef-aqua: #83c092;
+      --ef-blue: #7fbbb3;
+      --ef-blue-dim: rgba(127, 187, 179, 0.15);
+      --ef-yellow: #dbbc7f;
+      --ef-yellow-dim: rgba(219, 188, 127, 0.15);
+      --ef-red: #e67e80;
+      --ef-red-hover: #ef9395;
+      --ef-red-dim: rgba(230, 126, 128, 0.15);
+      --ef-red-border: rgba(230, 126, 128, 0.35);
+      --ef-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --ef-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
     * {
       box-sizing: border-box;
     }
+
     body {
       margin: 0;
-      padding: 24px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-      background: #0f172a;
-      color: #e2e8f0;
+      padding: 28px 20px;
+      font-family: var(--ef-font-sans);
+      background: var(--ef-bg-dim);
+      color: var(--ef-fg);
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
+
     .container {
-      max-width: 1000px;
+      max-width: 980px;
       margin: 0 auto;
     }
+
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #334155;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--ef-bg2);
       margin-bottom: 24px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 22px;
-      color: #38bdf8;
-    }
-    .card {
-      background: #1e293b;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .card h2 {
-      margin-top: 0;
-      font-size: 16px;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .flex-row {
-      display: flex;
-      align-items: center;
       gap: 16px;
       flex-wrap: wrap;
     }
-    .btn {
-      background: #334155;
-      color: #f8fafc;
-      border: 1px solid #475569;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s;
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .btn:hover {
-      background: #475569;
+
+    .brand-logo {
+      width: 30px;
+      height: 30px;
+      color: var(--ef-green);
+      flex-shrink: 0;
     }
-    .btn-primary {
-      background: #0284c7;
-      border-color: #0284c7;
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--ef-fg-alt);
     }
-    .btn-primary:hover {
-      background: #0369a1;
-    }
-    .btn-danger {
-      background: #991b1b;
-      border-color: #b91c1c;
-    }
-    .btn-danger:hover {
-      background: #7f1d1d;
-    }
-    .status-badge {
+
+    .subtitle {
+      margin: 2px 0 0 0;
       font-size: 12px;
-      padding: 4px 10px;
+      color: var(--ef-fg-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 12px;
       border-radius: 9999px;
       font-weight: 600;
+      letter-spacing: 0.4px;
+      transition: all 0.25s ease;
     }
+
+    .status-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    @keyframes ef-pulse {
+      0% {
+        box-shadow: 0 0 0 0 var(--ef-green-glow);
+      }
+      70% {
+        box-shadow: 0 0 0 5px rgba(167, 192, 128, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(167, 192, 128, 0);
+      }
+    }
+
     .status-active {
-      background: #064e3b;
-      color: #6ee7b7;
+      background: var(--ef-green-dim);
+      color: var(--ef-green);
+      border: 1px solid rgba(167, 192, 128, 0.35);
     }
+
+    .status-active::before {
+      background: var(--ef-green);
+      animation: ef-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
     .status-suspended {
-      background: #78350f;
-      color: #fde68a;
+      background: var(--ef-yellow-dim);
+      color: var(--ef-yellow);
+      border: 1px solid rgba(219, 188, 127, 0.35);
     }
+
+    .status-suspended::before {
+      background: var(--ef-yellow);
+    }
+
     .status-disconnected {
-      background: #7f1d1d;
-      color: #fca5a5;
+      background: var(--ef-red-dim);
+      color: var(--ef-red);
+      border: 1px solid var(--ef-red-border);
     }
+
+    .status-disconnected::before {
+      background: var(--ef-red);
+    }
+
+    .card {
+      background: var(--ef-bg0);
+      border-radius: 12px;
+      border: 1px solid var(--ef-bg2);
+      padding: 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .card-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--ef-aqua);
+      flex-shrink: 0;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--ef-aqua);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--ef-fg-muted);
+      margin: 0 0 16px 0;
+      line-height: 1.4;
+    }
+
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--ef-bg1);
+      color: var(--ef-fg);
+      border: 1px solid var(--ef-bg3);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--ef-bg2);
+      border-color: var(--ef-bg4);
+      color: var(--ef-fg-alt);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--ef-green);
+      color: var(--ef-bg-hard);
+      border-color: var(--ef-green);
+      box-shadow: 0 2px 6px rgba(167, 192, 128, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--ef-green-hover);
+      border-color: var(--ef-green-hover);
+      color: var(--ef-bg-dim);
+    }
+
+    .btn-danger {
+      background: var(--ef-red-dim);
+      color: var(--ef-red);
+      border-color: var(--ef-red-border);
+    }
+
+    .btn-danger:hover {
+      background: rgba(230, 126, 128, 0.24);
+      border-color: var(--ef-red);
+      color: var(--ef-red-hover);
+    }
+
     .toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       gap: 12px;
       flex-wrap: wrap;
     }
+
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      width: 14px;
+      height: 14px;
+      color: var(--ef-fg-subtle);
+      pointer-events: none;
+    }
+
     .search-input {
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #e2e8f0;
-      padding: 8px 12px;
-      border-radius: 6px;
+      background: var(--ef-bg-hard);
+      border: 1px solid var(--ef-bg2);
+      color: var(--ef-fg);
+      padding: 8px 12px 8px 32px;
+      border-radius: 8px;
       font-size: 13px;
-      min-width: 250px;
+      min-width: 260px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
+
+    .search-input::placeholder {
+      color: var(--ef-fg-subtle);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--ef-green);
+      box-shadow: 0 0 0 2px var(--ef-green-glow);
+    }
+
     select.filter-select {
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #e2e8f0;
+      background: var(--ef-bg-hard);
+      border: 1px solid var(--ef-bg2);
+      color: var(--ef-fg);
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s;
     }
+
+    select.filter-select:focus {
+      outline: none;
+      border-color: var(--ef-green);
+    }
+
     .log-viewport {
-      background: #020617;
-      border: 1px solid #1e293b;
-      border-radius: 6px;
+      background: var(--ef-bg-hard);
+      border: 1px solid var(--ef-bg1);
+      border-radius: 8px;
       height: 480px;
       overflow-y: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: var(--ef-font-mono);
       font-size: 12px;
-      padding: 12px;
+      padding: 10px;
       white-space: pre-wrap;
       word-break: break-all;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
     }
+
+    .log-viewport::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .log-viewport::-webkit-scrollbar-track {
+      background: var(--ef-bg-hard);
+    }
+
+    .log-viewport::-webkit-scrollbar-thumb {
+      background: var(--ef-bg2);
+      border-radius: 4px;
+    }
+
+    .log-viewport::-webkit-scrollbar-thumb:hover {
+      background: var(--ef-bg3);
+    }
+
     .log-row {
-      padding: 4px 0;
-      border-bottom: 1px solid #0f172a;
+      padding: 4px 6px;
+      border-bottom: 1px solid rgba(52, 63, 68, 0.35);
       display: flex;
-      gap: 12px;
+      gap: 10px;
+      align-items: baseline;
+      border-radius: 4px;
+      transition: background 0.15s ease;
     }
+
+    .log-row:hover {
+      background: rgba(211, 198, 170, 0.04);
+    }
+
     .log-time {
-      color: #64748b;
+      color: var(--ef-fg-subtle);
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
+
     .log-level {
-      font-weight: 600;
+      font-weight: 700;
       flex-shrink: 0;
-      width: 50px;
+      width: 52px;
+      text-align: center;
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
-    .log-level-INFO { color: #38bdf8; }
-    .log-level-WARN { color: #fbbf24; }
-    .log-level-ERROR { color: #f87171; }
+
+    .log-level-INFO {
+      color: var(--ef-blue);
+      background: var(--ef-blue-dim);
+      border: 1px solid rgba(127, 187, 179, 0.25);
+    }
+
+    .log-level-WARN {
+      color: var(--ef-yellow);
+      background: var(--ef-yellow-dim);
+      border: 1px solid rgba(219, 188, 127, 0.25);
+    }
+
+    .log-level-ERROR {
+      color: var(--ef-red);
+      background: var(--ef-red-dim);
+      border: 1px solid var(--ef-red-border);
+    }
+
     .log-msg {
-      color: #cbd5e1;
+      color: var(--ef-fg);
       flex-grow: 1;
     }
+
     .log-meta {
-      color: #94a3b8;
+      color: var(--ef-fg-muted);
       font-size: 11px;
     }
   </style>
@@ -166,12 +409,32 @@
 <body>
   <div class="container">
     <header>
-      <h1>Setu Bridge Settings</h1>
+      <div class="header-brand">
+        <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="12" r="3"/>
+          <path d="M9 12h6"/>
+          <path d="M6 9a9 9 0 0 1 12 0"/>
+        </svg>
+        <div>
+          <h1>Setu Bridge Console</h1>
+          <p class="subtitle">Gemini Automation &amp; MCP Integration Settings</p>
+        </div>
+      </div>
       <span id="bridgeBadge" class="status-badge status-disconnected">Checking Status</span>
     </header>
 
     <div class="card">
-      <h2>Bridge Management</h2>
+      <div class="card-header">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h2>Bridge Controller</h2>
+      </div>
       <div class="flex-row">
         <button id="toggleBridgeBtn" class="btn btn-primary">Suspend Bridge</button>
         <button id="openGeminiBtn" class="btn">Launch Gemini Tab</button>
@@ -180,14 +443,29 @@
     </div>
 
     <div class="card">
-      <h2>In-Browser Append-Only Log File</h2>
-      <p style="font-size: 13px; color: #94a3b8; margin-top: 0;">
+      <div class="card-header">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        <h2>In-Browser Event Journal</h2>
+      </div>
+      <p class="card-desc">
         IndexedDB persistent storage with automated FIFO eviction (capped at 5,000 records).
       </p>
 
       <div class="toolbar">
         <div class="flex-row">
-          <input type="text" id="searchInput" class="search-input" placeholder="Search log records...">
+          <div class="search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="searchInput" class="search-input"
+                   placeholder="Search log records...">
+          </div>
           <select id="levelFilter" class="filter-select">
             <option value="ALL">All Levels</option>
             <option value="INFO">INFO</option>
