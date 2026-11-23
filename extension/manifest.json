@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Hello",
+  "version": "1.0",
+  "description": "Prints hello on Gemini chat",
+  "content_scripts": [
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
