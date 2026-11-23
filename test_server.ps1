@@ -172,22 +172,28 @@ try {
                     Write-Host "[TEST SEND] $($test.Id): $($test.Op)($($test.A), $($test.B))"
                     Send-WsFrame -Stream $stream -Message $jsonReq
 
-                    # Read corresponding response
-                    $respFrame = Read-WsFrame -Stream $stream
-                    if ($null -eq $respFrame -or $respFrame.Opcode -eq 0x08) {
-                        Write-Host "[TEST FAIL] Disconnected awaiting $($test.Id)" `
-                            -ForegroundColor Red
-                        $interrupted = $true
-                        break
-                    }
+                    # Read corresponding response, draining intermediate heartbeat frames
+                    do {
+                        $respFrame = Read-WsFrame -Stream $stream
+                        if ($null -eq $respFrame -or $respFrame.Opcode -eq 0x08) {
+                            Write-Host "[TEST FAIL] Disconnected awaiting $($test.Id)" `
+                                -ForegroundColor Red
+                            $interrupted = $true
+                            break
+                        }
 
-                    if ($respFrame.Opcode -ne 0x01) {
-                        Write-Host "[TEST SKIP] Non-text opcode $($respFrame.Opcode)"
-                        continue
-                    }
+                        if ($respFrame.Opcode -ne 0x01) {
+                            Write-Host "[TEST SKIP] Non-text opcode $($respFrame.Opcode)"
+                            continue
+                        }
 
-                    Write-Host "[TEST RECV] $($respFrame.Payload)"
-                    $respData = $respFrame.Payload | ConvertFrom-Json
+                        Write-Host "[TEST RECV] $($respFrame.Payload)"
+                        $respData = $respFrame.Payload | ConvertFrom-Json
+                    } while ($respData.status -eq "loading" -or
+                             $respData.status -eq "generating" -or
+                             $respData.status -eq "progress")
+
+                    if ($interrupted) { break }
 
                     $isSuccess = $false
                     if ($test.ExpectedStatus -eq "ok") {
