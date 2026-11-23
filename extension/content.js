@@ -1,12 +1,10 @@
 // Setu loopback WebSocket client for Gemini Web
 const SETU_PORT = 0x2328; // 9000
 const WS_URL = `ws://127.0.0.1:${SETU_PORT}`;
-const BASE_DELAY_MS = 0x3E8; // 1000ms
-const MAX_DELAY_MS = 0x7530; // 30000ms
+const POLL_INTERVAL_MS = 0x3E8; // 1000ms
 
 let socket = null;
-let reconnectTimer = null;
-let currentDelay = BASE_DELAY_MS;
+let pollTimer = null;
 
 function logNotice(message, data) {
   const prefix = "++++++++++++++++++++ [SETU] ";
@@ -18,39 +16,78 @@ function logNotice(message, data) {
   }
 }
 
-function clearPendingReconnect() {
-  if (reconnectTimer !== null) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
+function clearPendingPoll() {
+  if (pollTimer !== null) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
   }
 }
 
-function scheduleReconnect() {
-  clearPendingReconnect();
-  const jitter = Math.floor(Math.random() * 0x3E8);
-  const backoff = Math.min(currentDelay, MAX_DELAY_MS) + jitter;
+function scheduleNextPoll() {
+  clearPendingPoll();
 
-  logNotice(`Connection closed/unavailable; retrying in ${backoff}ms`);
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null;
+  pollTimer = setTimeout(() => {
+    pollTimer = null;
     connect();
-  }, backoff);
+  }, POLL_INTERVAL_MS);
+}
 
-  currentDelay = Math.min(currentDelay * 2, MAX_DELAY_MS);
+// Execution engine for arithmetic operations
+function executeCalculation(op, a, b) {
+  const numA = Number(a);
+  const numB = Number(b);
+
+  if (!Number.isFinite(numA) || !Number.isFinite(numB)) {
+    return { ok: false, error: "Error: Operands must be valid numbers" };
+  }
+
+  switch (op) {
+    case "add":
+      return { ok: true, result: numA + numB };
+    case "subtract":
+      return { ok: true, result: numA - numB };
+    case "multiply":
+      return { ok: true, result: numA * numB };
+    case "divide":
+      if (numB === 0) {
+        return { ok: false, error: "Error: Cannot divide by zero" };
+      }
+      return { ok: true, result: numA / numB };
+    default:
+      return { ok: false, error: `Error: Unsupported operation '${op}'` };
+  }
+}
+
+function handleCalculationRequest(payload) {
+  const { id, op, a, b } = payload;
+  const outcome = executeCalculation(op, a, b);
+
+  const reply = {
+    id: id ?? null,
+    action: "calculate",
+    status: outcome.ok ? "ok" : "error",
+    ...(outcome.ok ? { result: outcome.result } : { error: outcome.error }),
+    timestamp: Date.now()
+  };
+
+  logNotice(`Dispatched calculation reply for id [${id}]:`, reply);
+  socket.send(JSON.stringify(reply));
 }
 
 function handleMessage(event) {
   logNotice("Incoming frame received:", event.data);
   try {
     const payload = JSON.parse(event.data);
+
     if (payload.type === "ping") {
       logNotice("Responding to ping with pong");
       socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
     } else if (payload.type === "pong") {
       logNotice("Received pong acknowledgment from Setu host");
+    } else if (payload.action === "calculate" || payload.type === "calculate") {
+      handleCalculationRequest(payload);
     }
   } catch (_err) {
-    // Non-JSON frame handling
     if (event.data === "ping") {
       socket.send("pong");
     }
@@ -58,20 +95,23 @@ function handleMessage(event) {
 }
 
 function connect() {
-  clearPendingReconnect();
+  clearPendingPoll();
+
+  if (socket && (socket.readyState === WebSocket.OPEN ||
+                 socket.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
 
   try {
     socket = new WebSocket(WS_URL);
   } catch (err) {
     logNotice("Socket initialization error:", err);
-    scheduleReconnect();
+    scheduleNextPoll();
     return;
   }
 
   socket.onopen = () => {
-    currentDelay = BASE_DELAY_MS;
     logNotice("WebSocket connection ESTABLISHED on 127.0.0.1:" + SETU_PORT);
-    // Send immediate ping test frame
     socket.send(JSON.stringify({ type: "ping", source: "extension", timestamp: Date.now() }));
     logNotice("Dispatched initial test ping frame to Setu host");
   };
@@ -80,14 +120,25 @@ function connect() {
 
   socket.onclose = () => {
     socket = null;
-    scheduleReconnect();
+    scheduleNextPoll();
   };
 
-  socket.onerror = (err) => {
-    logNotice("Socket encountered error (host likely offline):", err);
+  socket.onerror = () => {
     socket?.close();
   };
 }
+
+window.addEventListener("online", () => {
+  connect();
+});
+
+window.addEventListener("pagehide", () => {
+  clearPendingPoll();
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+});
 
 // Initial connection attempt
 connect();
