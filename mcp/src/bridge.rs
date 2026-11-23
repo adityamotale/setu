@@ -10,10 +10,13 @@ use tokio::sync::{mpsc, oneshot, Mutex};
 use uuid::Uuid;
 
 const PORT: u16 = 0x2328; // 9000
-const TIMEOUT_MS: u64 = 0xEA60; // 60000ms
+const INACTIVITY_TIMEOUT_MS: u64 = 0xEA60; // 60000ms
+const MAX_TOTAL_TIMEOUT_MS: u64 = 0x0004_93E0; // 300000ms
 const MAGIC_GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 static BRIDGE: OnceLock<Arc<ExtensionBridge>> = OnceLock::new();
+
+pub type ProgressCallback = Arc<dyn Fn(String) + Send + Sync>;
 
 #[derive(Serialize)]
 struct CalculationRequest {
@@ -35,12 +38,20 @@ struct ExtensionMessage {
     #[serde(default)]
     result: Option<serde_json::Value>,
     #[serde(default)]
+    progress: Option<String>,
+    #[serde(default)]
     error: Option<String>,
+}
+
+struct PendingEntry {
+    tx: oneshot::Sender<Result<String, String>>,
+    touch_tx: mpsc::Sender<()>,
+    on_progress: Option<ProgressCallback>,
 }
 
 pub struct ExtensionBridge {
     active_tx: Mutex<Option<mpsc::Sender<String>>>,
-    pending: Mutex<HashMap<String, oneshot::Sender<Result<String, String>>>>,
+    pending: Mutex<HashMap<String, PendingEntry>>,
 }
 
 impl ExtensionBridge {
@@ -63,7 +74,18 @@ impl ExtensionBridge {
     }
 
     pub async fn calculate(&self, op: &str, a: f64, b: f64) -> Result<String, String> {
-        let (tx, rx) = oneshot::channel();
+        self.calculate_with_progress(op, a, b, None).await
+    }
+
+    pub async fn calculate_with_progress(
+        &self,
+        op: &str,
+        a: f64,
+        b: f64,
+        on_progress: Option<ProgressCallback>,
+    ) -> Result<String, String> {
+        let (tx, mut rx) = oneshot::channel();
+        let (touch_tx, mut touch_rx) = mpsc::channel(0x20);
         let id = Uuid::new_v4().to_string();
 
         let req = CalculationRequest {
@@ -88,19 +110,45 @@ impl ExtensionBridge {
             }
         }
 
-        self.pending.lock().await.insert(id.clone(), tx);
+        self.pending.lock().await.insert(
+            id.clone(),
+            PendingEntry {
+                tx,
+                touch_tx,
+                on_progress,
+            },
+        );
 
-        match tokio::time::timeout(Duration::from_millis(TIMEOUT_MS), rx).await {
-            Ok(Ok(calc_res)) => calc_res,
-            Ok(Err(_)) => {
-                self.pending.lock().await.remove(&id);
-                Err("Channel canceled or extension terminated".to_string())
+        let start = tokio::time::Instant::now();
+        let max_deadline = start + Duration::from_millis(MAX_TOTAL_TIMEOUT_MS);
+
+        let outcome = loop {
+            let now = tokio::time::Instant::now();
+            if now >= max_deadline {
+                break Err("Extension response exceeded maximum total timeout".to_string());
             }
-            Err(_) => {
-                self.pending.lock().await.remove(&id);
-                Err("Extension response timed out".to_string())
+            let step_timeout = Duration::from_millis(INACTIVITY_TIMEOUT_MS).min(max_deadline - now);
+
+            tokio::select! {
+                res = &mut rx => {
+                    break match res {
+                        Ok(calc_res) => calc_res,
+                        Err(_) => Err("Channel canceled or extension terminated".to_string()),
+                    };
+                }
+                hb = touch_rx.recv() => {
+                    if hb.is_some() {
+                        continue;
+                    }
+                }
+                _ = tokio::time::sleep(step_timeout) => {
+                    break Err("Extension response timed out due to inactivity".to_string());
+                }
             }
-        }
+        };
+
+        self.pending.lock().await.remove(&id);
+        outcome
     }
 
     async fn run_server(self: Arc<Self>, port: u16) {
@@ -195,17 +243,28 @@ impl ExtensionBridge {
             if let Some(id) = msg.id {
                 let status_str = msg.status.as_deref().unwrap_or_default();
                 if status_str == "loading" || status_str == "generating" || status_str == "progress" {
+                    let detail = msg.progress.clone().unwrap_or_else(|| {
+                        msg.result.as_ref().map(|v| v.to_string()).unwrap_or_default()
+                    });
                     tracing::info!(
-                        "Task [{}] progress heartbeat: status='{}', detail={:?}",
+                        "Task [{}] progress heartbeat: status='{}', detail='{}'",
                         id,
                         status_str,
-                        msg.result
+                        detail
                     );
+
+                    let pending = self.pending.lock().await;
+                    if let Some(entry) = pending.get(&id) {
+                        let _ = entry.touch_tx.try_send(());
+                        if let Some(cb) = &entry.on_progress {
+                            cb(detail);
+                        }
+                    }
                     return;
                 }
 
                 let mut pending = self.pending.lock().await;
-                if let Some(tx) = pending.remove(&id) {
+                if let Some(entry) = pending.remove(&id) {
                     let outcome = if status_str == "ok" {
                         let res_str = match msg.result {
                             Some(serde_json::Value::String(s)) => s,
@@ -216,7 +275,7 @@ impl ExtensionBridge {
                     } else {
                         Err(msg.error.unwrap_or_else(|| "Unknown extension error".into()))
                     };
-                    let _ = tx.send(outcome);
+                    let _ = entry.tx.send(outcome);
                 }
             }
         }
@@ -319,5 +378,28 @@ impl ExtensionBridge {
         }
 
         Ok(Some((opcode, payload)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialize_extension_progress_frame() {
+        let json = r#"{"id":"test-123","action":"calculate","status":"loading","progress":"streaming (2s elapsed)","timestamp":1700000000000}"#;
+        let msg: ExtensionMessage = serde_json::from_str(json).unwrap();
+        assert_eq!(msg.id.as_deref(), Some("test-123"));
+        assert_eq!(msg.status.as_deref(), Some("loading"));
+        assert_eq!(msg.progress.as_deref(), Some("streaming (2s elapsed)"));
+    }
+
+    #[test]
+    fn test_deserialize_extension_result_frame() {
+        let json = r#"{"id":"test-456","action":"calculate","status":"ok","result":"42","timestamp":1700000000000}"#;
+        let msg: ExtensionMessage = serde_json::from_str(json).unwrap();
+        assert_eq!(msg.id.as_deref(), Some("test-456"));
+        assert_eq!(msg.status.as_deref(), Some("ok"));
+        assert_eq!(msg.result, Some(serde_json::Value::String("42".into())));
     }
 }
