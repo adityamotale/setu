@@ -193,9 +193,20 @@ impl ExtensionBridge {
             }
 
             if let Some(id) = msg.id {
+                let status_str = msg.status.as_deref().unwrap_or_default();
+                if status_str == "loading" || status_str == "generating" || status_str == "progress" {
+                    tracing::info!(
+                        "Task [{}] progress heartbeat: status='{}', detail={:?}",
+                        id,
+                        status_str,
+                        msg.result
+                    );
+                    return;
+                }
+
                 let mut pending = self.pending.lock().await;
                 if let Some(tx) = pending.remove(&id) {
-                    let outcome = if msg.status.as_deref() == Some("ok") {
+                    let outcome = if status_str == "ok" {
                         let res_str = match msg.result {
                             Some(serde_json::Value::String(s)) => s,
                             Some(v) => v.to_string(),
