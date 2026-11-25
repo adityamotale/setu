@@ -19,12 +19,10 @@ static BRIDGE: OnceLock<Arc<ExtensionBridge>> = OnceLock::new();
 pub type ProgressCallback = Arc<dyn Fn(String) + Send + Sync>;
 
 #[derive(Serialize)]
-struct CalculationRequest {
+struct PromptRequest {
     id: String,
     action: &'static str,
-    op: String,
-    a: f64,
-    b: f64,
+    prompt: String,
 }
 
 #[derive(Deserialize)]
@@ -73,27 +71,23 @@ impl ExtensionBridge {
         bridge
     }
 
-    pub async fn calculate(&self, op: &str, a: f64, b: f64) -> Result<String, String> {
-        self.calculate_with_progress(op, a, b, None).await
+    pub async fn send_prompt(&self, prompt: String) -> Result<String, String> {
+        self.send_prompt_with_progress(prompt, None).await
     }
 
-    pub async fn calculate_with_progress(
+    pub async fn send_prompt_with_progress(
         &self,
-        op: &str,
-        a: f64,
-        b: f64,
+        prompt: String,
         on_progress: Option<ProgressCallback>,
     ) -> Result<String, String> {
         let (tx, mut rx) = oneshot::channel();
         let (touch_tx, mut touch_rx) = mpsc::channel(0x20);
         let id = Uuid::new_v4().to_string();
 
-        let req = CalculationRequest {
+        let req = PromptRequest {
             id: id.clone(),
-            action: "calculate",
-            op: op.to_string(),
-            a,
-            b,
+            action: "handoff",
+            prompt,
         };
 
         let json_payload = serde_json::to_string(&req)
@@ -103,10 +97,18 @@ impl ExtensionBridge {
             let active = self.active_tx.lock().await;
             if let Some(sender) = active.as_ref() {
                 if sender.send(json_payload).await.is_err() {
-                    return Err("Extension disconnected during send".to_string());
+                    return Err(
+                        "Setu browser extension disconnected during send. Ask the user to \
+                         reconnect the Setu browser extension, then retry."
+                            .to_string(),
+                    );
                 }
             } else {
-                return Err("Browser extension not connected on ws://127.0.0.1:0x2328".to_string());
+                return Err(
+                    "Setu browser extension is not connected on ws://127.0.0.1:9000. Ask the \
+                     user to enable and connect the Setu browser extension, then retry."
+                        .to_string(),
+                );
             }
         }
 
@@ -384,6 +386,28 @@ impl ExtensionBridge {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_serialize_prompt_request() {
+        let req = PromptRequest {
+            id: "req-1".into(),
+            action: "handoff",
+            prompt: "hello".into(),
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains(r#""action":"handoff""#));
+        assert!(json.contains(r#""prompt":"hello""#));
+    }
+
+    #[tokio::test]
+    async fn test_hard_fail_when_disconnected() {
+        let bridge = ExtensionBridge {
+            active_tx: Mutex::new(None),
+            pending: Mutex::new(HashMap::new()),
+        };
+        let err = bridge.send_prompt("test".into()).await.unwrap_err();
+        assert!(err.contains("not connected"));
+    }
 
     #[test]
     fn test_deserialize_extension_progress_frame() {
