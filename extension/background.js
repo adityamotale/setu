@@ -140,23 +140,23 @@ function connectWs() {
         return;
       }
 
-      if (payload.action === "calculate" || payload.type === "calculate") {
+      if (payload.action === "handoff" || payload.action === "calculate" || payload.type === "calculate") {
         if (!isConnectionEstablished) {
           isConnectionEstablished = true;
         }
-        await log("INFO", `Received calculation request [${payload.id}]`, payload);
+        await log("INFO", `Received handoff request [${payload.id}]`, payload);
         const targetTabId = await ensureGeminiTabReady();
         chrome.tabs.sendMessage(targetTabId, {
           action: "EXECUTE_CALCULATION",
           payload
         }, (_res) => {
           if (chrome.runtime.lastError) {
-            log("ERROR", "Failed to forward calculation to tab", {
+            log("ERROR", "Failed to forward request to tab", {
               error: chrome.runtime.lastError.message
             });
             sendWs({
               id: payload.id ?? null,
-              action: "calculate",
+              action: payload.action ?? "handoff",
               status: "error",
               error: "Gemini tab content script not ready",
               timestamp: Date.now()
