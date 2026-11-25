@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rmcp::{transport::stdio, ServiceExt};
-use setu_mcp::Calculator;
+use setu_mcp::SetuMcp;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -11,9 +11,9 @@ async fn main() -> Result<()> {
         .with_ansi(false)
         .init();
 
-    tracing::info!("Starting mcp-calculator server...");
+    tracing::info!("Starting setu-mcp server...");
 
-    let app = Calculator::default();
+    let app = SetuMcp::default();
     let service = app.serve(stdio()).await.inspect_err(|e| {
         tracing::error!("MCP serve error: {:?}", e);
     })?;
